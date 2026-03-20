@@ -48,8 +48,10 @@ import CertificationResult from './pages/CertificationResult'
 import MyCertificates from './pages/MyCertificates'
 
 
-export const serverUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
-
+export const serverUrl =
+  import.meta.env.VITE_API_URL ||
+  "https://new-ai-lms.onrender.com" ||
+  "http://localhost:8000";
 function App() {
   
   let {userData} = useSelector(state => state.user)
