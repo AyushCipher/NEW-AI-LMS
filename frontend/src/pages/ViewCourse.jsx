@@ -256,7 +256,7 @@ function ViewCourse() {
                 </button>
                 {/* Only students see View Exams button */}
                 {!isTeacher && (
-                  <button className="bg-blue-100 text-blue-600 px-6 py-2 rounded hover:bg-blue-200 flex items-center gap-2" onClick={() => navigate(`/studentexams`)}>
+                  <button className="bg-blue-100 text-blue-600 px-6 py-2 rounded hover:bg-blue-200 flex items-center gap-2" onClick={() => navigate(`/studentexams/${courseId}`)}>
                     <FaClipboardList /> View Exams
                   </button>
                 )}

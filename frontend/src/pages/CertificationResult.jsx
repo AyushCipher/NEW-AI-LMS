@@ -68,9 +68,14 @@ function CertificationResult() {
       // Refresh to show certificate
       await fetchResult();
       
-      // Open certificate in new tab
-      if (response.data.certificate?.pdfUrl) {
-        window.open(response.data.certificate.pdfUrl, '_blank');
+      // Download certificate through backend endpoint
+      if (response.data.certificate?._id) {
+        const link = document.createElement('a');
+        link.href = `${serverUrl}/api/certification/download/${response.data.certificate._id}`;
+        link.download = `${response.data.certificate.certificateId}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
       }
     } catch (error) {
       console.error("Error generating certificate:", error);

@@ -1,5 +1,8 @@
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 import Course from "../models/courseModel.js";
 import Progress from "../models/progressModel.js";
 import InterviewSession from "../models/interviewSessionModel.js";
@@ -10,6 +13,9 @@ import { v2 as cloudinary } from "cloudinary";
 import streamifier from "streamifier";
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -35,6 +41,99 @@ const analyzeDifficulty = (lectures, courseLevel) => {
     if (advancedScore > beginnerScore && advancedScore > intermediateScore) return "Advanced";
     if (beginnerScore > intermediateScore) return "Beginner";
     return "Intermediate";
+};
+
+// Helper function to generate certificate PDF
+const generateCertificatePDF = (user, certificate) => {
+    return new Promise((resolve, reject) => {
+        const doc = new PDFDocument({
+            layout: 'landscape',
+            size: 'A4',
+            margins: { top: 50, bottom: 50, left: 50, right: 50 }
+        });
+
+        const chunks = [];
+        doc.on('data', chunk => chunks.push(chunk));
+
+        // Certificate styling
+        const pageWidth = doc.page.width;
+        const pageHeight = doc.page.height;
+
+        // Background color
+        doc.rect(0, 0, pageWidth, pageHeight).fill('#F5F3FF');
+
+        // Header border
+        doc.lineWidth(3).strokeColor('#1E3A5F');
+        doc.rect(40, 40, pageWidth - 80, pageHeight - 80).stroke();
+
+        // Inner border
+        doc.lineWidth(1).strokeColor('#D4AF37');
+        doc.rect(50, 50, pageWidth - 100, pageHeight - 100).stroke();
+
+        // Add logo at top right
+        try {
+            const logoPath = path.join(__dirname, '../../frontend/public/logo.jpg');
+            if (fs.existsSync(logoPath)) {
+                doc.image(logoPath, pageWidth - 150, 60, { width: 100, height: 60 });
+            }
+        } catch (e) {
+            console.log("Logo not found, continuing without it");
+        }
+
+        // Certificate title
+        doc.fontSize(48).fillColor('#1E3A5F').font('Helvetica-BoldOblique');
+        doc.text('CERTIFICATE', pageWidth / 2 - 180, 80, { width: 360, align: 'center' });
+
+        // Subtitle - FIXED ALIGNMENT
+        doc.fontSize(20).fillColor('#6B7280').font('Helvetica');
+        doc.text('OF COMPLETION', pageWidth / 2 - 150, 155, { width: 300, align: 'center' });
+
+        // Body
+        doc.fontSize(14).fillColor('#4B5563');
+        doc.text('This is to certify that:', pageWidth / 2 - 100, 210, { width: 200, align: 'center' });
+
+        // Student name
+        doc.fontSize(42).fillColor('#1E3A5F').font('Helvetica-BoldOblique');
+        doc.text(user.name, 150, 250, { width: pageWidth - 300, align: 'center' });
+
+        // Course completion text
+        doc.fontSize(14).fillColor('#4B5563').font('Helvetica');
+        doc.text('For successfully completing the AI Certification Interview for', 150, 310, { width: pageWidth - 300, align: 'center' });
+
+        // Course name
+        doc.fontSize(18).fillColor('#1E3A5F').font('Helvetica-Bold');
+        doc.text(`Course: ${certificate.courseName}`, 150, 340, { width: pageWidth - 300, align: 'center' });
+
+        // Date and Certificate ID
+        const completionDate = new Date(certificate.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        doc.fontSize(12).fillColor('#4B5563').font('Helvetica');
+        doc.text(`Completed Date: ${completionDate}`, 150, 380, { width: pageWidth - 300, align: 'center' });
+        doc.text(`Certificate ID: ${certificate.certificateId}`, 150, 400, { width: pageWidth - 300, align: 'center' });
+        doc.text(`Interview Score: ${certificate.interviewScore.toFixed(0)}%`, 150, 420, { width: pageWidth - 300, align: 'center' });
+
+        // Footer
+        const footerY = pageHeight - 120;
+
+        doc.fontSize(10).fillColor('#6B7280');
+        doc.text(certificate.verificationCode, 120, footerY);
+        doc.fontSize(8);
+        doc.text('SERIAL NO.', 120, footerY + 15);
+        doc.text(certificate.serialNumber, 120, footerY + 27);
+
+        doc.fontSize(10).fillColor('#B8860B').font('Helvetica-Bold');
+        doc.text('CERTIFIED BY', pageWidth / 2 - 40, footerY);
+        doc.text('VIRTUAL COURSES', pageWidth / 2 - 50, footerY + 15);
+        doc.text('AUTHENTIC', pageWidth / 2 - 35, footerY + 30);
+
+        doc.fontSize(16).fillColor('#1E3A5F').font('Helvetica-BoldOblique');
+        doc.text('Virtual Courses', pageWidth - 200, footerY);
+        doc.fontSize(10).fillColor('#6B7280').font('Helvetica');
+        doc.text('Course Mentor', pageWidth - 180, footerY + 20);
+
+        doc.on('end', () => resolve(Buffer.concat(chunks)));
+        doc.on('error', reject);
+        doc.end();
+    });
 };
 
 // Check if user has completed the course
@@ -681,29 +780,13 @@ export const generateCertificate = async (req, res) => {
 
         console.log("PDF generated, size:", pdfBuffer.length, "bytes");
 
-        // Upload to Cloudinary
-        const uploadResult = await new Promise((resolve, reject) => {
-            const uploadStream = cloudinary.uploader.upload_stream(
-                {
-                    resource_type: 'raw',
-                    type: 'upload',
-                    public_id: `certificates/${certificateId}`,
-                    format: 'pdf'
-                },
-                (error, result) => {
-                    if (error) {
-                        console.error("Cloudinary upload error:", error);
-                        reject(error);
-                    } else {
-                        console.log("Cloudinary upload success:", result.secure_url);
-                        resolve(result);
-                    }
-                }
-            );
-            streamifier.createReadStream(pdfBuffer).pipe(uploadStream);
-        });
+        // Store certificate metadata - PDF will be generated on-demand during download
+        // Using certificateId as reference instead of uploading to Cloudinary
+        const pdfUrl = certificateId; // Simple reference - will regenerate on download
 
         // Create certificate record
+        const baseUrl = pdfUrl;
+        
         const certificate = await Certificate.create({
             user: userId,
             course: session.course._id,
@@ -713,7 +796,7 @@ export const generateCertificate = async (req, res) => {
             studentName: user.name,
             courseName: session.course.title,
             interviewScore: session.averageScore * 10,
-            pdfUrl: uploadResult.secure_url,
+            pdfUrl: baseUrl,
             verificationCode
         });
 
@@ -749,6 +832,91 @@ export const getUserCertificates = async (req, res) => {
     } catch (error) {
         console.error("Get User Certificates Error:", error);
         return res.status(500).json({ message: "Error fetching certificates", error: error.message });
+    }
+};
+
+// Download certificate PDF with backend authentication
+export const downloadCertificate = async (req, res) => {
+    try {
+        const userId = req.userId;
+        const { certificateId } = req.params;
+
+        // Verify user owns this certificate
+        const certificate = await Certificate.findOne({
+            _id: certificateId,
+            user: userId
+        }).populate("course");
+
+        if (!certificate) {
+            return res.status(404).json({ message: "Certificate not found" });
+        }
+
+        // Get the user data
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Generate PDF using helper function
+        const pdfBuffer = await generateCertificatePDF(user, certificate);
+        console.log("PDF regenerated for download, size:", pdfBuffer.length, "bytes");
+
+        // Set proper headers for PDF download
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `attachment; filename="${certificate.certificateId}.pdf"`,
+            'Content-Length': pdfBuffer.length,
+            'Cache-Control': 'no-cache, no-store, must-revalidate'
+        });
+
+        // Send the PDF buffer
+        return res.send(pdfBuffer);
+
+    } catch (error) {
+        console.error("Download Certificate Error:", error);
+        return res.status(500).json({ message: "Error downloading certificate", error: error.message });
+    }
+};
+
+// View certificate PDF inline in browser
+export const viewCertificate = async (req, res) => {
+    try {
+        const userId = req.userId;
+        const { certificateId } = req.params;
+
+        // Verify user owns this certificate
+        const certificate = await Certificate.findOne({
+            _id: certificateId,
+            user: userId
+        }).populate("course");
+
+        if (!certificate) {
+            return res.status(404).json({ message: "Certificate not found" });
+        }
+
+        // Get the user data
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Generate PDF using helper function
+        const pdfBuffer = await generateCertificatePDF(user, certificate);
+        console.log("PDF regenerated for viewing, size:", pdfBuffer.length, "bytes");
+
+        // Set proper headers for inline PDF viewing (not download)
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Length': pdfBuffer.length,
+            'Cache-Control': 'no-cache, no-store, must-revalidate'
+        });
+
+        // Send the PDF buffer
+        return res.send(pdfBuffer);
+
+    } catch (error) {
+        console.error("View Certificate Error:", error);
+        return res.status(500).json({ message: "Error viewing certificate", error: error.message });
     }
 };
 

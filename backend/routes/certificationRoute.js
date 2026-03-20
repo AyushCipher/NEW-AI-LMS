@@ -8,6 +8,8 @@ import {
     getInterviewResult,
     generateCertificate,
     getUserCertificates,
+    downloadCertificate,
+    viewCertificate,
     verifyCertificate,
     getCourseInfoForCertification
 } from "../controllers/certificationController.js";
@@ -29,6 +31,8 @@ certificationRouter.get("/result/:sessionId", isAuth, getInterviewResult);
 // Certificate management
 certificationRouter.post("/generate-certificate", isAuth, generateCertificate);
 certificationRouter.get("/my-certificates", isAuth, getUserCertificates);
+certificationRouter.get("/view/:certificateId", isAuth, viewCertificate);
+certificationRouter.get("/download/:certificateId", isAuth, downloadCertificate);
 certificationRouter.post("/verify", verifyCertificate);
 
 export default certificationRouter;

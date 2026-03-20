@@ -152,9 +152,10 @@ function MyCertificates() {
                     </div>
 
                     {/* Action Buttons */}
+                    {/* Action Buttons */}
                     <div className="flex gap-2 pt-3 border-t">
                       <a
-                        href={cert.pdfUrl}
+                        href={`${serverUrl?.replace(/\/$/, '')}/api/certification/view/${cert._id}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium"
@@ -162,7 +163,7 @@ function MyCertificates() {
                         <FaEye /> View
                       </a>
                       <a
-                        href={cert.pdfUrl}
+                        href={`${serverUrl?.replace(/\/$/, '')}/api/certification/download/${cert._id}`}
                         download={`${cert.certificateId}.pdf`}
                         className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
                       >

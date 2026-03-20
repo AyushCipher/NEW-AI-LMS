@@ -14,11 +14,13 @@ import {
   updateQuestion,
   deleteQuestion,
   getStudentExams,
+  getStudentExamsByCourse,
   startExam,
   submitAnswer,
   submitExam,
   getExamResult,
   getStudentExamHistory,
+  getStudentExamHistoryByCourse,
   getExamAnalytics,
   getProctoringReport,
   gradeAnswer,
@@ -65,8 +67,11 @@ examRouter.delete("/questions/:questionId", isAuth, isApprovedEducator, deleteQu
 
 // ==================== STUDENT EXAM OPERATIONS ====================
 
-// Get available exams for student
+// Get available exams for student (all courses)
 examRouter.get("/student/available", isAuth, getStudentExams);
+
+// Get available exams for a specific course (student view)
+examRouter.get("/student/available/:courseId", isAuth, getStudentExamsByCourse);
 
 // Start exam
 examRouter.post("/:examId/start", isAuth, startExam);
@@ -80,8 +85,11 @@ examRouter.post("/attempt/:attemptId/submit", isAuth, submitExam);
 // Get exam result
 examRouter.get("/attempt/:attemptId/result", isAuth, getExamResult);
 
-// Get student exam history
+// Get student exam history (all courses)
 examRouter.get("/student/history", isAuth, getStudentExamHistory);
+
+// Get student exam history for a specific course
+examRouter.get("/student/history/:courseId", isAuth, getStudentExamHistoryByCourse);
 
 // ==================== INSTRUCTOR ANALYTICS & GRADING ====================
 

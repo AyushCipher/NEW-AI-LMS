@@ -100,6 +100,7 @@ function App() {
         
         {/* Student Exam Routes */}
         <Route path='/studentexams' element={userData ? <StudentExams/> : <Navigate to={"/signup"}/>}/>
+        <Route path='/studentexams/:courseId' element={userData ? <StudentExams/> : <Navigate to={"/signup"}/>}/>
         <Route path='/exampreinstructions/:examId' element={userData ? <ExamPreInstructions/> : <Navigate to={"/signup"}/>}/>
         <Route path='/takeexam/:examId' element={userData ? <TakeExam/> : <Navigate to={"/signup"}/>}/>
         <Route path='/examresult/:attemptId' element={userData ? <ExamResult/> : <Navigate to={"/signup"}/>}/>

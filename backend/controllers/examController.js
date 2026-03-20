@@ -468,6 +468,144 @@ export const getStudentExams = async (req, res) => {
   }
 };
 
+// Get available exams for a specific course (student view)
+export const getStudentExamsByCourse = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { courseId } = req.params;
+
+    // Get user and verify enrollment in this course
+    const user = await User.findById(userId).populate("enrolledCourses");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const isEnrolled = user.enrolledCourses.some(
+      (c) => c._id.toString() === courseId
+    );
+
+    if (!isEnrolled) {
+      return res.status(403).json({ message: "You are not enrolled in this course" });
+    }
+
+    // Get published exams for this specific course
+    const now = new Date();
+    const exams = await Exam.find({
+      course: courseId,
+      isPublished: true,
+      isActive: true,
+    })
+      .populate("course", "title thumbnail")
+      .populate("creator", "name")
+      .select("-questions")
+      .sort({ createdAt: -1 });
+
+    // Get student's attempts for these exams
+    const examIds = exams.map((e) => e._id);
+    const attempts = await ExamAttempt.find({
+      exam: { $in: examIds },
+      student: userId,
+    }).select("exam status totalMarksObtained percentage startedAt completedAt");
+
+    // Map attempts to exams with attempt info
+    const examsWithAttempts = exams.map((exam) => {
+      const examAttempts = attempts.filter((a) => a.exam.toString() === exam._id.toString());
+      const completedAttempts = examAttempts.filter((a) => a.status === "submitted" || a.status === "auto_submitted");
+      const inProgressAttempt = examAttempts.find((a) => a.status === "in_progress" || a.status === "started");
+      const lastAttempt = examAttempts.sort((a, b) => new Date(b.completedAt || b.startedAt) - new Date(a.completedAt || a.startedAt))[0];
+      
+      const maxAttempts = exam.maxAttempts || 1;
+      const totalAttemptCount = completedAttempts.length + (inProgressAttempt ? 1 : 0);
+      const remainingAttempts = maxAttempts - totalAttemptCount;
+      
+      const isNotStartedYet = exam.startTime && new Date(exam.startTime) > now;
+      const isExpired = exam.endTime && new Date(exam.endTime) < now;
+      const isWithinTimeWindow = !isNotStartedYet && !isExpired;
+      
+      return {
+        ...exam.toObject(),
+        attempt: lastAttempt || null,
+        hasAttempted: examAttempts.length > 0,
+        attemptCount: totalAttemptCount,
+        remainingAttempts: remainingAttempts,
+        canAttempt: remainingAttempts > 0 && !inProgressAttempt && isWithinTimeWindow,
+        canContinue: !!inProgressAttempt && isWithinTimeWindow,
+        inProgressAttemptId: inProgressAttempt?._id || null,
+        maxAttempts: maxAttempts,
+        isExpired: isExpired,
+        isNotStartedYet: isNotStartedYet,
+        status: isNotStartedYet ? "upcoming" : isExpired ? "expired" : "active",
+      };
+    });
+
+    return res.status(200).json(examsWithAttempts);
+  } catch (error) {
+    console.error("Get student exams by course error:", error);
+    return res.status(500).json({ message: `Failed to get exams: ${error.message}` });
+  }
+};
+
+// Get exam history for a specific course (student view)
+export const getStudentExamHistoryByCourse = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { courseId } = req.params;
+
+    // Verify user is enrolled in this course
+    const user = await User.findById(userId).populate("enrolledCourses");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const isEnrolled = user.enrolledCourses.some(
+      (c) => c._id.toString() === courseId
+    );
+
+    if (!isEnrolled) {
+      return res.status(403).json({ message: "You are not enrolled in this course" });
+    }
+
+    // Get all exams for this course
+    const courseExams = await Exam.find({ course: courseId });
+    const courseExamIds = courseExams.map((e) => e._id);
+
+    // Get attempts for these exams by the student
+    const attempts = await ExamAttempt.find({
+      exam: { $in: courseExamIds },
+      student: userId,
+    })
+      .populate({
+        path: "exam",
+        select: "title totalMarks passingMarks course",
+        populate: { path: "course", select: "title thumbnail" },
+      })
+      .sort({ createdAt: -1 });
+
+    const history = attempts.map((attempt) => ({
+      _id: attempt._id,
+      exam: {
+        _id: attempt.exam._id,
+        title: attempt.exam.title,
+        totalMarks: attempt.exam.totalMarks,
+        passingMarks: attempt.exam.passingMarks,
+      },
+      course: attempt.exam.course,
+      status: attempt.status,
+      totalMarksObtained: attempt.totalMarksObtained,
+      percentage: attempt.percentage,
+      isPassed: attempt.isPassed,
+      startedAt: attempt.startedAt,
+      completedAt: attempt.completedAt,
+      riskLevel: attempt.riskLevel,
+    }));
+
+    return res.status(200).json(history);
+  } catch (error) {
+    console.error("Get history by course error:", error);
+    return res.status(500).json({ message: `Failed to get history: ${error.message}` });
+  }
+};
+
 // Start exam attempt
 export const startExam = async (req, res) => {
   try {

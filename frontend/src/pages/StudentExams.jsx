@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -10,25 +10,47 @@ import { FaClock, FaCheck, FaBook, FaVideo, FaTriangleExclamation, FaArrowLeft }
 
 function StudentExams() {
   const navigate = useNavigate();
+  const { courseId } = useParams(); // Get courseId from URL params (if viewing for a specific course)
   const { userData } = useSelector((state) => state.user);
   const [exams, setExams] = useState([]);
   const [examHistory, setExamHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("available");
+  const [courseName, setCourseName] = useState(null);
 
   useEffect(() => {
     fetchExams();
     fetchHistory();
-  }, []);
+    if (courseId) {
+      fetchCourseName();
+    }
+  }, [courseId]);
+
+  const fetchCourseName = async () => {
+    try {
+      const res = await axios.get(`${serverUrl}/api/course/getcourse/${courseId}`, {
+        withCredentials: true,
+      });
+      setCourseName(res.data.title);
+    } catch (error) {
+      console.error("Error fetching course name:", error);
+    }
+  };
 
   const fetchExams = async () => {
     try {
-      const res = await axios.get(`${serverUrl}/api/exam/student/available`, {
+      // If courseId is provided, fetch only exams for that course
+      const url = courseId
+        ? `${serverUrl}/api/exam/student/available/${courseId}`
+        : `${serverUrl}/api/exam/student/available`;
+      
+      const res = await axios.get(url, {
         withCredentials: true,
       });
       setExams(res.data);
     } catch (error) {
       console.error("Error fetching exams:", error);
+      toast.error("Failed to fetch exams");
     } finally {
       setLoading(false);
     }
@@ -36,7 +58,12 @@ function StudentExams() {
 
   const fetchHistory = async () => {
     try {
-      const res = await axios.get(`${serverUrl}/api/exam/student/history`, {
+      // If courseId is provided, fetch only history for that course
+      const url = courseId
+        ? `${serverUrl}/api/exam/student/history/${courseId}`
+        : `${serverUrl}/api/exam/student/history`;
+      
+      const res = await axios.get(url, {
         withCredentials: true,
       });
       setExamHistory(res.data);
@@ -77,12 +104,14 @@ function StudentExams() {
         <div className="max-w-6xl mx-auto">
           {/* Back button */}
           <button
-            onClick={() => navigate("/")}
+            onClick={() => courseId ? navigate(`/viewcourse/${courseId}`) : navigate("/")}
             className="flex items-center gap-2 text-gray-600 hover:text-black mb-6"
           >
-            <FaArrowLeft /> Back to Home
+            <FaArrowLeft /> {courseId ? "Back to Course" : "Back to Home"}
           </button>
-          <h1 className="text-3xl font-bold text-gray-800 mb-8">My Exams</h1>
+          <h1 className="text-3xl font-bold text-gray-800 mb-8">
+            {courseId ? `${courseName || "Course"} - Exams` : "My Exams"}
+          </h1>
 
           {/* Tabs */}
           <div className="flex gap-4 mb-8">
