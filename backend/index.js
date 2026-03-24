@@ -19,20 +19,23 @@ import proctoringRouter from "./routes/proctoringRoute.js"
 import announcementRouter from "./routes/announcementRoute.js"
 import adminRouter from "./routes/adminRoute.js"
 import certificationRouter from "./routes/certificationRoute.js"
+
 dotenv.config()
 
-let port = process.env.PORT || 8000
-let app = express()
+const port = process.env.PORT || 8000
+const app = express()
+
 app.use(express.json())
 app.use(cookieParser())
-
 app.use(cors({
     origin: [
-      "https://new-ai-lms-frontend.onrender.com",
-      "https://new-ai-lms.onrender.com"
+        "https://new-ai-lms-frontend.onrender.com",
+        "https://new-ai-lms.onrender.com",
+        "http://localhost:5173",
+        "http://localhost:8000"
     ],
     credentials: true
-}));
+}))
 
 app.use("/api/auth", authRouter)
 app.use("/api/user", userRouter)
@@ -48,7 +51,7 @@ app.use("/api/announcement", announcementRouter)
 app.use("/api/admin", adminRouter)
 app.use("/api/certification", certificationRouter)
 
-app.get("/" , (req,res)=>{
+app.get("/", (req, res) => {
     res.send("Hello From Server")
 })
 
@@ -56,11 +59,7 @@ app.get("/" , (req,res)=>{
 const httpServer = createServer(app)
 setupSocket(httpServer)
 
-
-// (Proctoring socket logic can be moved to socket.js if needed)
-
-httpServer.listen(port , ()=>{
+httpServer.listen(port, () => {
     console.log("Server Started on port", port)
     connectDb()
 })
-

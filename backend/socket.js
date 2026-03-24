@@ -6,6 +6,8 @@ export function setupSocket(server) {
   const allowedOrigins = [
     'http://localhost:5173',
     'http://localhost:8000',
+    'https://new-ai-lms-frontend.onrender.com',
+    'https://new-ai-lms.onrender.com',
     process.env.FRONTEND_URL
   ].filter(Boolean); // Remove undefined values
 
