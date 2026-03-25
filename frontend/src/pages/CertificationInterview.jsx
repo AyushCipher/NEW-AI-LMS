@@ -15,9 +15,136 @@ import {
 } from "react-icons/fa6";
 import { ClipLoader } from "react-spinners";
 
+
 function CertificationInterview() {
+  // Move useParams/useNavigate to the top
   const { sessionId } = useParams();
   const navigate = useNavigate();
+
+  // Proctoring state
+  const [violationCount, setViolationCount] = useState(0);
+  const [warnings, setWarnings] = useState([]);
+  const violationLimit = 5;
+  // Modal state for block/redirect
+  const [showBlockModal, setShowBlockModal] = useState(false);
+  const [blockCountdown, setBlockCountdown] = useState(3);
+  const [hasRedirected, setHasRedirected] = useState(false);
+  const [retakeDisabled, setRetakeDisabled] = useState(false);
+
+  // Helper to record a violation
+  const recordViolation = useCallback((type, message) => {
+    setViolationCount((prev) => prev + 1);
+    setWarnings((prev) => [...prev, { type, message, time: new Date() }]);
+    toast.warning(message);
+  }, []);
+
+  // Copy/paste/shortcut/Right-click disable
+  useEffect(() => {
+    const handleCopy = (e) => {
+      e.preventDefault();
+      recordViolation('copy', 'Copying is not allowed!');
+    };
+    const handlePaste = (e) => {
+      e.preventDefault();
+      recordViolation('paste', 'Pasting is not allowed!');
+    };
+    const handleContextMenu = (e) => {
+      e.preventDefault();
+      recordViolation('right_click', 'Right-click is not allowed!');
+    };
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && ['c','v','x','a','f','p','s'].includes(e.key.toLowerCase())) {
+        e.preventDefault();
+        recordViolation('shortcut', 'Keyboard shortcuts are not allowed!');
+      }
+    };
+    document.addEventListener('copy', handleCopy, true);
+    document.addEventListener('paste', handlePaste, true);
+    document.addEventListener('contextmenu', handleContextMenu, true);
+    document.addEventListener('keydown', handleKeyDown, true);
+    return () => {
+      document.removeEventListener('copy', handleCopy, true);
+      document.removeEventListener('paste', handlePaste, true);
+      document.removeEventListener('contextmenu', handleContextMenu, true);
+      document.removeEventListener('keydown', handleKeyDown, true);
+    };
+  }, [recordViolation]);
+
+  // Tab switch/blur detection
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        recordViolation('tab_switch', 'Tab switch or window lost focus!');
+      }
+    };
+    const handleBlur = () => {
+      recordViolation('blur', 'Window lost focus!');
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('blur', handleBlur);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', handleBlur);
+    };
+  }, [recordViolation]);
+
+  // Fullscreen enforcement and check every 3 seconds
+  useEffect(() => {
+    // Request fullscreen on mount
+    if (document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen();
+    }
+    const checkFullscreen = () => {
+      if (!document.fullscreenElement) {
+        recordViolation('fullscreen_exit', 'Fullscreen is required! Please return to fullscreen.');
+      }
+    };
+    const interval = setInterval(checkFullscreen, 3000);
+    // Listen for manual fullscreen exit
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement) {
+        recordViolation('fullscreen_exit', 'Fullscreen is required! Please return to fullscreen.');
+      }
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, [recordViolation]);
+
+  // Auto warning: if violation limit exceeded, block UI, show modal, and auto-redirect
+  useEffect(() => {
+    // Only trigger block modal and countdown once
+    if (violationCount > violationLimit && !showBlockModal && !hasRedirected) {
+      setShowBlockModal(true);
+      setBlockCountdown(3);
+      toast.error('You have exceeded the allowed number of warnings. The interview will be terminated.');
+    }
+  }, [violationCount, showBlockModal, hasRedirected]);
+
+  // Countdown and auto-redirect to dashboard
+  useEffect(() => {
+    let timer;
+    if (showBlockModal && blockCountdown > 0 && !hasRedirected) {
+      timer = setTimeout(() => setBlockCountdown((c) => c - 1), 1000);
+    } else if (showBlockModal && blockCountdown === 0 && !hasRedirected) {
+      setHasRedirected(true);
+      // Exit fullscreen if active before navigating home
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      }
+      navigate("/");
+    }
+    return () => clearTimeout(timer);
+  }, [showBlockModal, blockCountdown, hasRedirected, navigate]);
+
+  // Handler to re-enable fullscreen
+  const handleEnableFullscreen = () => {
+    if (document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen();
+    }
+  };
   
   const [loading, setLoading] = useState(true);
   const [questionData, setQuestionData] = useState(null);
@@ -272,7 +399,58 @@ function CertificationInterview() {
 
   return (
     <div className="min-h-screen bg-gray-900 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
+      {/* Block Modal Overlay */}
+      {showBlockModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80">
+          <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
+            <h2 className="text-2xl font-bold text-red-600 mb-4">Interview Blocked</h2>
+            <p className="text-gray-800 mb-2">You have exceeded the allowed number of warnings.</p>
+            <p className="text-gray-600 mb-4">You will be redirected to the homepage in <span className="font-bold">{blockCountdown}</span> seconds.</p>
+            <button
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg font-bold text-lg hover:bg-blue-700 disabled:opacity-50"
+              onClick={() => {
+                setRetakeDisabled(true);
+                setHasRedirected(true);
+                if (document.fullscreenElement) {
+                  document.exitFullscreen();
+                }
+                navigate("/");
+              }}
+              disabled={retakeDisabled}
+            >
+              Go to Homepage
+            </button>
+          </div>
+        </div>
+      )}
+      <div className={`max-w-7xl mx-auto ${showBlockModal ? 'pointer-events-none select-none opacity-30' : ''}`}>
+        {/* Proctoring Warnings UI */}
+        <div className="mb-4">
+          <div className="flex items-center gap-4">
+            <span className="text-yellow-400 font-bold">Warnings: {violationCount} / 5</span>
+            {violationCount > violationLimit && (
+              <span className="text-red-500 font-bold">Interview Blocked</span>
+            )}
+          </div>
+          {warnings.length > 0 && (
+            <ul className="text-yellow-300 text-sm mt-2">
+              {warnings.slice(-3).map((w, i) => (
+                <li key={i} className="flex items-center gap-2">
+                  [{w.type}] {w.message}
+                </li>
+              ))}
+            </ul>
+          )}
+          {/* Show only one Enable Fullscreen button if any fullscreen_exit warning exists */}
+          {warnings.some(w => w.type === 'fullscreen_exit') && !showBlockModal && (
+            <button
+              onClick={handleEnableFullscreen}
+              className="mt-2 px-2 py-1 bg-blue-700 text-white rounded text-xs hover:bg-blue-800"
+            >
+              Enable Fullscreen
+            </button>
+          )}
+        </div>
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-xl md:text-2xl font-bold text-white">
@@ -285,7 +463,8 @@ function CertificationInterview() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Block all main UI if interview is blocked */}
+        <div className={`grid grid-cols-1 lg:grid-cols-2 gap-6 ${violationCount > violationLimit ? 'pointer-events-none opacity-50 select-none' : ''}`}>
           {/* Left Panel - Question */}
           <div className="space-y-6">
             {/* Question Navigation */}

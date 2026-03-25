@@ -71,7 +71,7 @@ const CourseCard = ({ thumbnail, title, category, price, id, reviews }) => {
         className="w-full h-48 object-cover"
       />
       {newAnnouncementCount > 0 && (
-        <span className="absolute top-2 left-2 bg-[#FF6A3D] text-white px-3 py-1 rounded-full text-xs font-bold shadow z-10" style={{letterSpacing: '1px'}}>{newAnnouncementCount}</span>
+        <span className="absolute top-2 left-2 bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow z-10 tracking-wide">NEW</span>
       )}
       {/* Content */}
       <div className="p-5 space-y-2">

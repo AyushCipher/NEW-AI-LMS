@@ -247,20 +247,28 @@ function ViewCourse() {
 
             {/* Enroll Button - Hidden for admins */}
             {userData?.role !== 'admin' && (
-              !isEnrolled ? <button className="bg-[black] text-white px-6 py-2 rounded hover:bg-gray-700 mt-3" onClick={() => handleEnroll(courseId, userData._id)}>
-                Enroll Now
-              </button> :
-              <div className="flex gap-3 flex-wrap mt-3">
-                <button className="bg-green-200 text-green-600 px-6 py-2 rounded hover:bg-gray-100 hover:border" onClick={() => navigate(`/viewlecture/${courseId}`)}>
-                 Watch Now
-                </button>
-                {/* Only students see View Exams button */}
-                {!isTeacher && (
-                  <button className="bg-blue-100 text-blue-600 px-6 py-2 rounded hover:bg-blue-200 flex items-center gap-2" onClick={() => navigate(`/studentexams/${courseId}`)}>
-                    <FaClipboardList /> View Exams
+              isTeacher ? (
+                <div className="flex gap-3 flex-wrap mt-3">
+                  <button className="bg-green-200 text-green-600 px-6 py-2 rounded hover:bg-gray-100 hover:border" onClick={() => navigate(`/viewlecture/${courseId}`)}>
+                    Watch Now
                   </button>
-                )}
-              </div>
+                </div>
+              ) : (
+                !isEnrolled ? <button className="bg-[black] text-white px-6 py-2 rounded hover:bg-gray-700 mt-3" onClick={() => handleEnroll(courseId, userData._id)}>
+                  Enroll Now
+                </button> :
+                <div className="flex gap-3 flex-wrap mt-3">
+                  <button className="bg-green-200 text-green-600 px-6 py-2 rounded hover:bg-gray-100 hover:border" onClick={() => navigate(`/viewlecture/${courseId}`)}>
+                    Watch Now
+                  </button>
+                  {/* Only students see View Exams button */}
+                  {!isTeacher && (
+                    <button className="bg-blue-100 text-blue-600 px-6 py-2 rounded hover:bg-blue-200 flex items-center gap-2" onClick={() => navigate(`/studentexams/${courseId}`)}>
+                      <FaClipboardList /> View Exams
+                    </button>
+                  )}
+                </div>
+              )
             )}
           </div>
         </div>

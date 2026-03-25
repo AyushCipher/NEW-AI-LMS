@@ -11,6 +11,11 @@ const CourseAnnouncements = ({ courseId, isTeacher }) => {
   const [editingId, setEditingId] = useState(null);
   const [editTitle, setEditTitle] = useState('');
   const [editContent, setEditContent] = useState('');
+  // Paging state (unified for all users)
+  const [page, setPage] = useState(1);
+  const pageSize = 3;
+  const totalPages = Math.ceil(announcements.length / pageSize);
+  const pagedAnnouncements = announcements.slice((page - 1) * pageSize, page * pageSize);
 
   const fetchAnnouncements = async () => {
     setLoading(true);
@@ -87,8 +92,8 @@ const CourseAnnouncements = ({ courseId, isTeacher }) => {
         </form>
       )}
       <ul className="space-y-4">
-        {announcements.map(a => (
-          <li key={a._id} className="border-b pb-2">
+        {pagedAnnouncements.map(a => (
+          <li key={a._id} className="border border-gray-400 rounded-xl p-4 bg-gray-50">
             {editingId === a._id ? (
               <div className="flex flex-col gap-2">
                 <input
@@ -126,6 +131,25 @@ const CourseAnnouncements = ({ courseId, isTeacher }) => {
         ))}
         {announcements.length === 0 && <li className="text-gray-500">No announcements yet.</li>}
       </ul>
+      {/* Paging controls for all users */}
+      {totalPages > 1 && (
+        <div className="flex justify-center items-center gap-2 mt-4">
+          <button
+            className={`px-6 py-2 rounded bg-gray-200 text-gray-700 font-semibold ${page === 1 ? 'opacity-60 cursor-not-allowed' : 'hover:bg-gray-300'}`}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
+          >
+            Previous Announcements
+          </button>
+          <button
+            className={`px-6 py-2 rounded bg-blue-500 text-white font-semibold ${page === totalPages ? 'opacity-60 cursor-not-allowed' : 'hover:bg-blue-600'}`}
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+          >
+            Next Announcements
+          </button>
+        </div>
+      )}
     </div>
   );
 };
