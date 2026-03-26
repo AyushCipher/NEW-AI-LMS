@@ -189,23 +189,40 @@ export const googleSignup = async (req, res) => {
 export const sendOtp = async (req, res) => {
   try {
     const { email } = req.body;
+    console.log("[sendOtp] Received request for email:", email);
 
     const user = await User.findOne({ email });
     if (!user) {
+      console.log("[sendOtp] User not found for email:", email);
       return res.status(404).json({ message: "User not found" });
     }
 
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
+    console.log("[sendOtp] Generated OTP:", otp);
 
     user.resetOtp = otp;
     user.otpExpires = Date.now() + 5 * 60 * 1000;
-    user.isOtpVerifed = false;
+    user.isOtpVerified = false;
 
-    await user.save();
-    await sendMail(email, otp);
+    try {
+      await user.save();
+      console.log("[sendOtp] User updated with OTP.");
+    } catch (saveErr) {
+      console.error("[sendOtp] Error saving user:", saveErr);
+      return res.status(500).json({ message: "Error saving user", error: saveErr });
+    }
+
+    try {
+      await sendMail(email, otp);
+      console.log("[sendOtp] OTP email sent.");
+    } catch (mailErr) {
+      console.error("[sendOtp] Error sending email:", mailErr);
+      return res.status(500).json({ message: "Error sending email", error: mailErr });
+    }
 
     return res.status(200).json({ message: "Email Sent Successfully!" });
   } catch (error) {
+    console.error("[sendOtp] Unexpected error:", error);
     return res.status(500).json({ message: "Send OTP Error", error });
   }
 };
@@ -221,7 +238,7 @@ export const verifyOtp = async (req, res) => {
       return res.status(400).json({ message: "Invalid OTP!" });
     }
 
-    user.isOtpVerifed = true;
+    user.isOtpVerified = true;
     user.resetOtp = undefined;
     user.otpExpires = undefined;
 
@@ -239,7 +256,7 @@ export const resetPassword = async (req, res) => {
     const { email, password } = req.body;
 
     const user = await User.findOne({ email });
-    if (!user || !user.isOtpVerifed) {
+    if (!user || !user.isOtpVerified) {
       return res.status(404).json({ message: "OTP verification required" });
     }
 
@@ -252,7 +269,7 @@ export const resetPassword = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
     user.password = hashedPassword;
-    user.isOtpVerifed = false;
+    user.isOtpVerified = false;
 
     await user.save();
 

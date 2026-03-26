@@ -61,12 +61,7 @@ function Nav() {
           {userData?.role === "educator" && !isEducatorApproved && (
             <span className='bg-[black] text-white hover:bg-gray-600 px-[25px] py-[10px] rounded-2xl' onClick={() => navigate("/teacher-application")}>Teacher Form</span>
           )}
-          {userData?.role !== "educator" && (
-            <span className='bg-[black] text-white hover:bg-gray-600 px-[25px] py-[10px] rounded-2xl' onClick={() => navigate("/enrolledcourses")}>My Courses</span>
-          )}
-          {userData?.role !== "educator" && (
-            <span className='bg-[black] text-white hover:bg-gray-600 px-[25px] py-[10px] rounded-2xl' onClick={() => navigate("/my-certificates")}>Certificates</span>
-          )}
+          {/* Removed My Courses and Certificates for admin panel */}
         </div>}
 
         <GiHamburgerMenu className='w-[30px] h-[30px] lg:hidden fill-white cursor-pointer' onClick={() => setShowHam(prev=>!prev)}/>
@@ -85,12 +80,7 @@ function Nav() {
         }
         
         <span className='flex items-center justify-center gap-2 text-white border-[2px] border-[#fdfbfb7a] bg-[#000000d5] rounded-lg px-[65px] py-[20px] text-[18px]' onClick={() => navigate("/profile")}>My Profile </span>
-        {userData?.role !== "educator" && (
-          <span className='flex items-center justify-center gap-2 text-white border-[2px] border-[#fdfbfb7a] bg-[#000000d5] rounded-lg px-[65px] py-[20px] text-[18px]' onClick={() => navigate("/enrolledcourses")}>My Courses</span>
-        )}
-        {userData?.role !== "educator" && (
-          <span className='flex items-center justify-center gap-2 text-white border-[2px] border-[#fdfbfb7a] bg-[#000000d5] rounded-lg px-[60px] py-[20px] text-[18px]' onClick={() => navigate("/my-certificates")}>Certificates</span>
-        )}
+        {/* Removed My Courses and Certificates for admin panel */}
         
         {userData?.role == "educator" ? <div className='flex items-center justify-center gap-2 text-[18px] text-white border-[2px] border-[#fdfbfb7a] bg-[#000000d5] rounded-lg px-[60px] py-[20px]' onClick={() => navigate("/dashboard")}>Dashboard</div>
           : ""}
