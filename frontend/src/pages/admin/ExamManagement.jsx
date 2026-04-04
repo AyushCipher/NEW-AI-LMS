@@ -98,17 +98,17 @@ function ExamManagement() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
       {/* Header */}
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-center gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
           <FaArrowLeftLong
-            className="w-6 h-6 cursor-pointer hover:text-gray-600"
+            className="w-5 h-5 sm:w-6 sm:h-6 cursor-pointer hover:text-gray-600 flex-shrink-0"
             onClick={() => navigate(`/addcourses/${courseId}`)}
           />
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">Exam Management</h1>
-            <p className="text-gray-600">{course?.title}</p>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-800 line-clamp-1">Exam Management</h1>
+            <p className="text-sm sm:text-base text-gray-600 line-clamp-1">{course?.title}</p>
           </div>
         </div>
 
@@ -116,9 +116,9 @@ function ExamManagement() {
         <div className="flex justify-end mb-6">
           <button
             onClick={() => navigate(`/createexam/${courseId}`)}
-            className="flex items-center gap-2 bg-black text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition"
+            className="flex items-center gap-2 bg-black text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg hover:bg-gray-800 transition text-sm sm:text-base"
           >
-            <FaPlus /> Create New Exam
+            <FaPlus className="w-4 h-4" /> <span className="hidden sm:inline">Create New Exam</span><span className="sm:hidden">New Exam</span>
           </button>
         </div>
 
@@ -137,87 +137,100 @@ function ExamManagement() {
             {exams.map((exam) => (
               <div
                 key={exam._id}
-                className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition"
+                className="bg-white rounded-xl shadow-sm p-4 sm:p-6 hover:shadow-md transition"
               >
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3">
-                      <h2 className="text-xl font-semibold text-gray-800">{exam.title}</h2>
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          exam.isPublished
-                            ? "bg-green-100 text-green-700"
-                            : "bg-yellow-100 text-yellow-700"
-                        }`}
-                      >
-                        {exam.isPublished ? "Published" : "Draft"}
-                      </span>
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          exam.proctoring?.enabled
-                            ? "bg-blue-100 text-blue-700"
-                            : "bg-gray-100 text-gray-600"
-                        }`}
-                      >
-                        {exam.proctoring?.enabled ? "AI Proctored" : "No Proctoring"}
-                      </span>
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                      <h2 className="text-lg sm:text-xl font-semibold text-gray-800 line-clamp-2">{exam.title}</h2>
+                      <div className="flex flex-wrap gap-2">
+                        <span
+                          className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
+                            exam.isPublished
+                              ? "bg-green-100 text-green-700"
+                              : "bg-yellow-100 text-yellow-700"
+                          }`}
+                        >
+                          {exam.isPublished ? "Published" : "Draft"}
+                        </span>
+                        <span
+                          className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
+                            exam.proctoring?.enabled
+                              ? "bg-blue-100 text-blue-700"
+                              : "bg-gray-100 text-gray-600"
+                          }`}
+                        >
+                          {exam.proctoring?.enabled ? "AI Proctored" : "No Proctoring"}
+                        </span>
+                      </div>
                     </div>
-                    <p className="text-gray-500 mt-2">{exam.description}</p>
+                    <p className="text-sm sm:text-base text-gray-500 line-clamp-2 mb-3">{exam.description}</p>
 
-                    <div className="flex flex-wrap gap-6 mt-4 text-sm text-gray-600">
-                      <span>Duration: {exam.duration} mins</span>
-                      <span>Total Marks: {exam.totalMarks}</span>
-                      <span>Passing: {exam.passingMarks}</span>
-                      <span>Questions: {exam.questions?.length || 0}</span>
-                      <span>Max Attempts: {exam.maxAttempts || 1}</span>
+                    <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-6 text-xs sm:text-sm text-gray-600 mb-3">
+                      <span className="whitespace-nowrap">Duration: {exam.duration}m</span>
+                      <span className="whitespace-nowrap">Marks: {exam.totalMarks}</span>
+                      <span className="whitespace-nowrap">Pass: {exam.passingMarks}</span>
+                      <span className="whitespace-nowrap">Q: {exam.questions?.length || 0}</span>
+                      <span className="whitespace-nowrap">Attempts: {exam.maxAttempts || 1}</span>
                     </div>
 
                     {exam.startTime && (
-                      <div className="mt-3 text-sm text-gray-500">
-                        <span>
-                          Start: {new Date(exam.startTime).toLocaleString()} | End:{" "}
-                          {new Date(exam.endTime).toLocaleString()}
+                      <div className="text-xs sm:text-sm text-gray-500 line-clamp-2">
+                        <span className="block">
+                          Start: {new Date(exam.startTime).toLocaleDateString()}
+                        </span>
+                        <span className="block">
+                          End: {new Date(exam.endTime).toLocaleDateString()}
                         </span>
                       </div>
                     )}
                   </div>
 
                   {/* Actions */}
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-2 w-full sm:w-auto sm:min-w-32">
                     <button
                       onClick={() => navigate(`/editexam/${exam._id}`)}
-                      className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
+                      className="flex items-center justify-center gap-2 px-3 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition text-sm"
+                      title="Edit"
                     >
-                      <FaPenToSquare /> Edit
+                      <FaPenToSquare className="w-4 h-4" />
+                      <span className="sm:hidden">Edit</span>
                     </button>
                     <button
                       onClick={() => navigate(`/examquestions/${exam._id}`)}
-                      className="flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition"
+                      className="flex items-center justify-center gap-2 px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition text-sm"
+                      title="Questions"
                     >
-                      <FaEye /> Questions
+                      <FaEye className="w-4 h-4" />
+                      <span className="sm:hidden">Questions</span>
                     </button>
                     <button
                       onClick={() => navigate(`/examanalytics/${exam._id}`)}
-                      className="flex items-center gap-2 px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition"
+                      className="flex items-center justify-center gap-2 px-3 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition text-sm"
+                      title="Analytics"
                     >
-                      <FaChartBar /> Analytics
+                      <FaChartBar className="w-4 h-4" />
+                      <span className="sm:hidden">Analytics</span>
                     </button>
                     <button
                       onClick={() => handleTogglePublish(exam._id)}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg transition ${
+                      className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition text-sm ${
                         exam.isPublished
                           ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
                           : "bg-green-100 text-green-700 hover:bg-green-200"
                       }`}
+                      title={exam.isPublished ? "Unpublish" : "Publish"}
                     >
-                      {exam.isPublished ? <MdUnpublished /> : <MdPublish />}
-                      {exam.isPublished ? "Unpublish" : "Publish"}
+                      {exam.isPublished ? <MdUnpublished className="w-4 h-4" /> : <MdPublish className="w-4 h-4" />}
+                      <span className="sm:hidden">{exam.isPublished ? "Unpublish" : "Publish"}</span>
                     </button>
                     <button
                       onClick={() => handleDeleteExam(exam._id)}
-                      className="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition"
+                      className="flex items-center justify-center gap-2 px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition text-sm"
+                      title="Delete"
                     >
-                      <FaTrash /> Delete
+                      <FaTrash className="w-4 h-4" />
+                      <span className="sm:hidden">Delete</span>
                     </button>
                   </div>
                 </div>
