@@ -53,13 +53,11 @@ Query: ${input}
 
     // ✅ Extract keyword safely
     let keyword =
-      aiResponse?.response?.text?.trim() ||
-      aiResponse?.text?.trim() ||
+      aiResponse?.response?.text()?.trim() ||   
+      aiResponse?.text?.()?.trim() ||            
       "Others";
 
-    // ---------------------------------------------
     // 1️⃣ FIRST SEARCH → Direct user input
-    // ---------------------------------------------
     let courses = await Course.find({
       isPublished: true,
       $or: [
@@ -154,7 +152,10 @@ IMPORTANT: Do NOT use horizontal lines (---), do NOT use pipe characters (|), ke
       contents: [{ text: prompt }],
     });
 
-    const summary = aiResponse?.response?.text || aiResponse?.text || "Summary could not be generated.";
+    const summary =
+      aiResponse?.response?.text()              
+      || aiResponse?.text?.()                   
+      || "Summary could not be generated.";
 
     return res.status(200).json({ summary });
   } catch (error) {
@@ -212,8 +213,11 @@ IMPORTANT: Return ONLY the JSON array, no markdown, no code blocks, no additiona
       contents: [{ text: prompt }],
     });
 
-    let quizText = aiResponse?.response?.text || aiResponse?.text || "[]";
-    
+    let quizText =
+      aiResponse?.response?.text()             
+      || aiResponse?.text?.()                 
+      || "[]";
+        
     // Clean up the response - remove markdown code blocks if present
     quizText = quizText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     
